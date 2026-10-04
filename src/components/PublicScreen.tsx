@@ -67,8 +67,8 @@ export const PublicScreen: React.FC<PublicScreenProps> = ({
 
   const [publicBaseUrl, setPublicBaseUrl] = useState(() => {
     const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    if (origin.includes('.run.app')) return origin;
-    return 'https://ais-pre-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
+    if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1')) return origin;
+    return 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
   });
 
   useEffect(() => {

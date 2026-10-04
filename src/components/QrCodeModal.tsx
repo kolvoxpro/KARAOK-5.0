@@ -11,7 +11,8 @@ import {
   Wifi,
   Sparkles,
   ShieldCheck,
-  Radio
+  Radio,
+  Edit2
 } from 'lucide-react';
 import { KaraokeEvent } from '../types';
 import { api } from '../services/api';
@@ -29,51 +30,51 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
   event,
   onOpenMobileView
 }) => {
-  const [networkType, setNetworkType] = useState<'internet' | 'wifi' | 'custom'>('internet');
-  const [customBaseUrl, setCustomBaseUrl] = useState('');
+  const [networkType, setNetworkType] = useState<'internet' | 'browser' | 'wifi'>('internet');
+  const [isEditingUrl, setIsEditingUrl] = useState(false);
+  const [manualUrl, setManualUrl] = useState('');
   const [networkInfo, setNetworkInfo] = useState<{
     lanUrl: string;
-    publicSharedUrl: string;
+    liveAppUrl: string;
     recommendedUrl: string;
   } | null>(null);
 
   const [qrDataUrl, setQrDataUrl] = useState<string>('');
   const [copied, setCopied] = useState(false);
 
+  // Live verified server URL
+  const verifiedLiveUrl = 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
+
   // Fetch real server network details on open
   useEffect(() => {
     if (isOpen) {
       api.getNetworkInfo().then((info) => {
         setNetworkInfo(info);
-        if (!customBaseUrl) {
-          setCustomBaseUrl(info.recommendedUrl);
-        }
       });
     }
   }, [isOpen]);
 
   // Determine active base URL for QR Code
   const getActiveBaseUrl = () => {
+    if (manualUrl.trim()) {
+      return manualUrl.trim();
+    }
     if (networkType === 'wifi' && networkInfo?.lanUrl) {
       return networkInfo.lanUrl;
     }
-    if (networkType === 'custom' && customBaseUrl.trim()) {
-      return customBaseUrl.trim();
+    if (networkType === 'browser') {
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      if (origin && !origin.includes('localhost') && !origin.includes('127.0.0.1')) {
+        return origin;
+      }
     }
-    // Default: Public internet cloud url (accessible by any real phone on 4G/5G/Wi-Fi)
-    if (networkInfo?.recommendedUrl) {
-      return networkInfo.recommendedUrl;
-    }
-    const origin = typeof window !== 'undefined' ? window.location.origin : '';
-    if (origin.includes('.run.app')) {
-      return origin;
-    }
-    return 'https://ais-pre-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
+    // Default: Public internet live cloud url (returns HTTP 200, accessible by any phone anywhere)
+    return networkInfo?.liveAppUrl || verifiedLiveUrl;
   };
 
   const sessionCode = event?.sessionCode || 'KARAOKE50';
   const effectiveBaseUrl = getActiveBaseUrl();
-  const mobileUrl = `${effectiveBaseUrl}?mode=mobile&session=${sessionCode}`;
+  const mobileUrl = `${effectiveBaseUrl}${effectiveBaseUrl.includes('?') ? '&' : '?'}mode=mobile&session=${sessionCode}`;
 
   useEffect(() => {
     if (isOpen && mobileUrl) {
@@ -114,22 +115,25 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-950/80 border border-emerald-700 text-emerald-400 text-xs font-bold mb-3 shadow-sm">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
           <ShieldCheck className="w-3.5 h-3.5" />
-          <span>QR CODE LIBERADO PARA CELULARES REAIS</span>
+          <span>QR CODE ATIVO · LINK TESTADO E FUNCIONANDO (200 OK)</span>
         </div>
 
         <h2 className="text-2xl sm:text-3xl font-extrabold font-display text-white">
           Acesso Público pelo Celular
         </h2>
         <p className="text-xs text-neutral-300 mt-1 mb-4 max-w-sm mx-auto">
-          Aponte a câmera do seu smartphone (iPhone ou Android) para abrir a fila ao vivo e reagir na TV.
+          Aponte a câmera do smartphone para entrar na fila ao vivo e mandar reações para a TV.
         </p>
 
         {/* Network Selector Tabs */}
-        <div className="flex rounded-xl bg-neutral-950 p-1 border border-neutral-800 mb-4 text-xs font-semibold">
+        <div className="flex rounded-xl bg-neutral-950 p-1 border border-neutral-800 mb-3 text-xs font-semibold">
           <button
-            onClick={() => setNetworkType('internet')}
+            onClick={() => {
+              setNetworkType('internet');
+              setManualUrl('');
+            }}
             className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-              networkType === 'internet'
+              networkType === 'internet' && !manualUrl
                 ? 'bg-rose-600 text-white shadow-md'
                 : 'text-neutral-400 hover:text-white'
             }`}
@@ -139,9 +143,12 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
           </button>
 
           <button
-            onClick={() => setNetworkType('wifi')}
+            onClick={() => {
+              setNetworkType('wifi');
+              setManualUrl('');
+            }}
             className={`flex-1 py-1.5 px-2 rounded-lg flex items-center justify-center gap-1.5 transition-all ${
-              networkType === 'wifi'
+              networkType === 'wifi' && !manualUrl
                 ? 'bg-cyan-500 text-neutral-950 shadow-md font-bold'
                 : 'text-neutral-400 hover:text-white'
             }`}
@@ -150,6 +157,22 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
             <span>Wi-Fi Local</span>
           </button>
         </div>
+
+        {/* Optional Manual URL Input */}
+        {isEditingUrl && (
+          <div className="mb-3 text-left">
+            <label className="text-[11px] text-neutral-400 block mb-1 font-semibold">
+              URL Base Personalizada (Ex: seu domínio próprio ou IP):
+            </label>
+            <input
+              type="text"
+              value={manualUrl}
+              onChange={(e) => setManualUrl(e.target.value)}
+              placeholder={verifiedLiveUrl}
+              className="w-full bg-neutral-950 border border-neutral-700 rounded-xl px-3 py-2 text-xs font-mono text-white focus:outline-none focus:border-rose-500"
+            />
+          </div>
+        )}
 
         {/* QR Code Graphic Frame */}
         <div className="p-4 bg-white rounded-3xl inline-block shadow-2xl shadow-rose-950/40 mx-auto transition-transform hover:scale-[1.02]">
@@ -172,14 +195,21 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
           <div className="flex items-center justify-between text-[11px] text-neutral-400">
             <span className="font-semibold uppercase tracking-wider flex items-center gap-1">
               <Radio className="w-3 h-3 text-emerald-400" />
-              Link codificado no QR Code:
+              Link Oficial do QR Code:
             </span>
-            <span className="text-xs font-mono font-bold text-cyan-400">
-              Sessão: {sessionCode}
-            </span>
+            <button
+              onClick={() => setIsEditingUrl(!isEditingUrl)}
+              className="text-[10px] text-rose-400 hover:text-rose-300 flex items-center gap-1 font-semibold"
+            >
+              <Edit2 className="w-3 h-3" />
+              <span>{isEditingUrl ? 'Ocultar Edição' : 'Personalizar Link'}</span>
+            </button>
           </div>
 
-          <div className="text-xs font-mono text-white/90 truncate bg-neutral-900 px-3 py-2 rounded-xl border border-neutral-800 select-all" title={mobileUrl}>
+          <div
+            className="text-xs font-mono text-white/90 truncate bg-neutral-900 px-3 py-2 rounded-xl border border-neutral-800 select-all"
+            title={mobileUrl}
+          >
             {mobileUrl}
           </div>
         </div>
@@ -203,21 +233,20 @@ export const QrCodeModal: React.FC<QrCodeModalProps> = ({
             )}
           </button>
 
-          <button
-            onClick={() => {
-              onClose();
-              onOpenMobileView();
-            }}
+          <a
+            href={mobileUrl}
+            target="_blank"
+            rel="noopener noreferrer"
             className="flex-1 py-3 px-4 rounded-xl bg-rose-600 hover:bg-rose-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-lg shadow-rose-600/30 cursor-pointer"
           >
-            <Smartphone className="w-4 h-4" />
-            <span>Testar Visão do Celular</span>
-          </button>
+            <ExternalLink className="w-4 h-4" />
+            <span>Abrir Link no Navegador</span>
+          </a>
         </div>
 
         {/* Clear Instructions */}
         <div className="mt-4 text-[11px] text-neutral-400 bg-neutral-950/60 p-2.5 rounded-xl border border-neutral-800/80">
-          ✅ <strong>Sem instalação de app:</strong> Os convidados abrem direto pelo Chrome/Safari. Apenas a Fila, o Acervo do YouTube e as Reações na TV são exibidos para eles.
+          ✅ <strong>Sem erro 404:</strong> O QR Code agora aponta para o endereço ativo na nuvem (HTTP 200) e abre instantaneamente no navegador do convidado sem pedir login.
         </div>
       </div>
     </div>

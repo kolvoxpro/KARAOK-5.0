@@ -541,23 +541,22 @@ export const api = {
     lanIp: string;
     lanUrl: string;
     currentHostUrl: string;
-    publicSharedUrl: string;
-    publicDevUrl: string;
+    liveAppUrl: string;
     recommendedUrl: string;
   }> {
     try {
       const res = await fetch('/api/network-info');
       if (res.ok) return await res.json();
     } catch {}
-    const isCloud = typeof window !== 'undefined' && window.location.origin.includes('.run.app');
-    const cloudUrl = isCloud ? window.location.origin : 'https://ais-pre-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
+    const origin = typeof window !== 'undefined' ? window.location.origin : '';
+    const isLive = origin && !origin.includes('localhost') && !origin.includes('127.0.0.1');
+    const liveAppUrl = 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
     return {
       lanIp: 'localhost',
       lanUrl: 'http://localhost:3000',
-      currentHostUrl: typeof window !== 'undefined' ? window.location.origin : '',
-      publicSharedUrl: 'https://ais-pre-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app',
-      publicDevUrl: 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app',
-      recommendedUrl: cloudUrl
+      currentHostUrl: origin,
+      liveAppUrl,
+      recommendedUrl: isLive ? origin : liveAppUrl
     };
   }
 };

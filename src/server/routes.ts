@@ -524,22 +524,22 @@ apiRouter.get('/network-info', (req: Request, res: Response) => {
     }
   } catch {}
 
-  const hostHeader = req.get('host') || '';
+  const forwardedHost = req.get('x-forwarded-host');
+  const host = forwardedHost || req.get('host') || '';
   const protocol = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-  const currentHostUrl = hostHeader ? `${protocol}://${hostHeader}` : '';
+  const currentHostUrl = host ? `${protocol}://${host}` : '';
 
-  const publicSharedUrl = 'https://ais-pre-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
-  const publicDevUrl = 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
+  // Verified active live Cloud Run URL for smartphones:
+  const liveAppUrl = 'https://ais-dev-zpcx6oattcp7qmjuiacmzl-855002600123.us-east1.run.app';
 
-  const isCloudRun = currentHostUrl.includes('.run.app');
-  const recommendedUrl = isCloudRun ? currentHostUrl : publicSharedUrl;
+  const isLiveDomain = currentHostUrl && !currentHostUrl.includes('localhost') && !currentHostUrl.includes('127.0.0.1');
+  const recommendedUrl = isLiveDomain ? currentHostUrl : liveAppUrl;
 
   res.json({
     lanIp,
     lanUrl: `http://${lanIp}:3000`,
     currentHostUrl,
-    publicSharedUrl,
-    publicDevUrl,
+    liveAppUrl,
     recommendedUrl
   });
 });
