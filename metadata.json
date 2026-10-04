@@ -1,0 +1,9 @@
+{
+  "name": "KARAOKÊ 5.0",
+  "description": "Sistema profissional de karaokê para bares, festas e eventos com controle pelo celular, modo público para TV/projetor, pontuação e fila em tempo real.",
+  "requestFramePermissions": [
+    "camera",
+    "microphone"
+  ],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
